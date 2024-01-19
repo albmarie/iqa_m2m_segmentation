@@ -1,0 +1,16 @@
+torch==1.12.1          #Already installed
+torchvision==0.13.1    #Already installed
+
+Pillow==9.0.1
+scikit-learn==1.0.2
+numpy==1.21.5
+matplotlib==3.5.3
+terminaltables==3.1.10
+tqdm==4.63.0
+scikit-image==0.19.3
+opencv-python==4.9.0.80
+pandas==1.3.5
+piqa==1.2.2
+piq==0.8.0
+torchmetrics==0.11.4
+seaborn==0.12.2
