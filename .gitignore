@@ -1,0 +1,18 @@
+#Exclude everything...
+*
+!*/
+
+#...Except this file, and few others
+!.gitignore
+!*.py
+!Dockerfile
+!requirements.txt
+!README.md
+
+#...Except everything in these folders
+!src/**
+
+#In case we re-added an undesired file, we exclude it again
+*.pyc
+*core
+*.sif

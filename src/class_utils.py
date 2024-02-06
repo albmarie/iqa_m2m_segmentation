@@ -68,6 +68,11 @@ class Distortion(object):
         self.color_subsampling  = color_subsampling
         self.subsampling_factor = subsampling_factor
 
+    #Downsampling part of the whole coding scheme (downsampling -> compression -> decompression -> upsampling). Note that this function could be an upsampling if self.subsampling_factor>1, which is unlikely.
+    def get_downsampling_transform(self):
+        img_size = (round(2048*self.subsampling_factor), round(1024*self.subsampling_factor))
+        return T.Resize(img_size = img_size)
+
     def get_compress_transform(self):
         if   self.DISTORTION_MODE == Distortion_mode.LOSSLESS:
             return T.PNG(                color_subsampling=self.color_subsampling)

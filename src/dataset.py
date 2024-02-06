@@ -1,5 +1,5 @@
 import torchvision
-from transforms import RGB2Gray, toFloat
+from transforms import RGB2Gray, toFloat, run_bash_cmd
 from torch.utils.data import Dataset
 from class_utils import Distortion_mode, Machine_Perception_mode, Distortion, Distortion_precompute
 from PIL import Image
@@ -9,6 +9,8 @@ import random
 from scipy.ndimage import convolve
 import cv2 as cv
 from machine_perception_measure import Machine_Perception_fn
+import re
+import os
 
 ################################################################################################################
 ################################################################################################################
@@ -299,6 +301,105 @@ class CustomCityscapesDataset(Dataset):
             random_distortion = self.coding_config_list[random.randrange(len(self.coding_config_list))]
 
         return load_image_dict(idx, self.split, img_id, random_distortion, self.machine_perception_fn)
+
+################################################################################################################
+##########          PREPROCESSING DATASETS          ############################################################
+################################################################################################################
+
+"""
+Encode images from the Cityscapes dataset using the coding configuration distortion and save the corresponding bitstreams of the disk.
+This dataset class is associated with the enum Distortion_precompute.PRECOMPUTED_ENCODING.
+"""
+class SavePrecomputedEncodingCityscapesDataset(torchvision.datasets.Cityscapes):
+    def __init__(self, undistorted_root: str, distorted_root: str, split: str, distortion: Distortion) -> None:
+        if not(distortion.DISTORTION_MODE == Distortion_mode.LOSSLESS or distortion.DISTORTION_MODE == Distortion_mode.JPEG):
+            raise Exception("Unsupported distortion " + distortion.DISTORTION_STRING + ". Supported distortions are: LOSSLESS, JPEG, JPEG2000.")
+        self.undistorted_root = undistorted_root
+        self.distorted_root = distorted_root
+        
+        self.compress_transform = distortion.get_compress_transform()
+        
+        self.extension_discriminator = re.compile(r'\.png')
+        super(SavePrecomputedEncodingCityscapesDataset, self).__init__(undistorted_root, split=split, mode="fine", target_type="semantic", transform=distortion.get_downsampling_transform())
+ 
+    def __getitem__(self, idx):
+        downsampled_sample, _ = torchvision.datasets.Cityscapes.__getitem__(self, idx)
+        
+        distorted_sample_filepath = self.images[idx]
+        distorted_sample_filepath = distorted_sample_filepath.replace(self.undistorted_root, self.distorted_root, 1)
+        os.makedirs(os.path.dirname(distorted_sample_filepath), exist_ok=True)
+
+        bitstream_length = self.compress_transform.encoder(downsampled_sample, distorted_sample_filepath.replace(self.extension_discriminator.search(distorted_sample_filepath).group(0), ""))
+        self.compress_transform.free_memory(distorted_sample_filepath.replace(self.extension_discriminator.search(distorted_sample_filepath).group(0), ""), keep_bitstream=True)
+
+        return bitstream_length
+
+################################################################################################################
+
+"""
+Encode images from the Cityscapes dataset using the coding configuration distortion and save the corresponding bitstreams of the disk.
+This dataset class is associated with the enum Distortion_precompute.PRECOMPUTED_ENCODING_STACKED.
+The stacked keyword means that images with a folder of the cityscapes dataset (e.g. lindau) are regrouped into a single YUV video file to be encoded together, where each frame of the video represent one of the original images.
+This is useful to encode all images with fewer calls as some encoders are meant for videos and not still images (i.e. JM, x265 and VVenC).
+All-intra configuration is used for these video encoders.
+
+Each __item__ of the stacked dataset represents a video of multiple images (all images that belongs to a given city).
+This stacked dataset have a number of __item__ correspoding to the number of folder in the split (e.g. 3 for validation set as the validation is composed of 3 cities: lindau, munster and frankfurt).
+"""
+class SavePrecomputedEncodingStackedCityscapesDataset(Dataset):
+    def __init__(self, lossless_preprocessed_downsampled_root: str, distorted_root: str, split: str, distortion: Distortion):
+        if not(distortion.DISTORTION_MODE == Distortion_mode.JM or distortion.DISTORTION_MODE == Distortion_mode.x265 or distortion.DISTORTION_MODE == Distortion_mode.VVENC):
+            raise Exception("Unsupported distortion " + distortion.DISTORTION_STRING + ". Supported distortions are JM, x265 and VVenC.")
+        self.lossless_preprocessed_downsampled_root = lossless_preprocessed_downsampled_root
+        self.distorted_root = distorted_root
+        self.split = split
+
+        self.distortion = distortion
+        self.compress_transform = distortion.get_compress_transform()
+
+        self.folders = []
+        for (dirpath, _, filenames) in os.walk(os.path.join(self.lossless_preprocessed_downsampled_root, 'leftImg8bit/', self.split)):
+            if len(filenames) < 1:
+                continue
+            self.folders.append(os.path.basename(dirpath))
+
+    def __len__(self):
+        return len(self.folders)
+    
+    def __getitem__(self, idx):
+        folder = self.folders[idx]
+        distorted_folder = os.path.join(self.distorted_root, "leftImg8bit/", self.split, folder)
+        undistorted_folder = os.path.join(self.lossless_preprocessed_downsampled_root, "leftImg8bit/", self.split, folder)
+        os.makedirs(distorted_folder, exist_ok=True)
+
+        filenames = None
+        for (_, _, _filenames) in os.walk(undistorted_folder):
+            if len(_filenames) > 0:
+                filenames = _filenames
+                break
+
+        if f'{folder}.txt' in filenames:
+            filenames.remove(f'{folder}.txt')
+        
+        distorted_folder = "\"" + distorted_folder + "\""
+        undistorted_folder = "\"" + undistorted_folder + "\""
+
+        stacked_images_order_dest_file = folder + ".txt"
+
+        enc_cmd = self.compress_transform.encoder(sample=Image.new(mode="RGB", size=(round(2048*self.distortion.subsampling_factor), round(1024*self.distortion.subsampling_factor))),
+                                                image_path=os.path.join(distorted_folder, stacked_images_order_dest_file[:-4]),
+                                                get_cmd=True)
+        enc_cmd = enc_cmd.replace("-i " + os.path.join(distorted_folder, folder) + self.compress_transform.in_format,
+                                  "-r 1 -f concat -i " + undistorted_folder + "/" + folder + ".txt", 1)
+        enc_cmd = enc_cmd.replace(" rm " + os.path.join(distorted_folder, folder) + self.compress_transform.in_format + " &&", "")
+        if self.distortion.DISTORTION_MODE == Distortion_mode.JM:
+            enc_cmd = enc_cmd.replace("FramesToBeEncoded=1 ", "FramesToBeEncoded=" + str(len(filenames)) + " ")
+
+        pre_enc_cmd = "cp /stacked_images_order/" + folder + ".txt " + undistorted_folder + "/" + stacked_images_order_dest_file + " && cd " + undistorted_folder + " && "
+        
+        print("pre_enc_cmd + enc_cmd", pre_enc_cmd + enc_cmd)
+        run_bash_cmd(pre_enc_cmd + enc_cmd, hide_output=False)
+        return os.stat(distorted_folder[1:-1] + "/" + folder + self.compress_transform.bitstream_format).st_size/len(filenames)
 
 ################################################################################################################
 ################################################################################################################

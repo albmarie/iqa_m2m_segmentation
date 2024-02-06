@@ -35,9 +35,6 @@ def main():
 		if not opt.no_cache_link:
 			cmd.extend(['--bind', f'/home/{user}/.cache/torch/hub/checkpoints/:/home/user/.cache/torch/hub/checkpoints/'])
 		cmd.extend([script_folder + '/singularity/iqa_m2m_segmentation.sif'])
-		cmd.extend(['/bin/bash', '-c'])
-		sub_cmd  = 'cd /src/ && python3 /src/bloc_level_metric_computation.py'
-		cmd.append(sub_cmd)
 	else:
 		cmd.extend(['sudo', 'docker', 'run', '-it'])
 		if opt.gpu:
@@ -49,9 +46,9 @@ def main():
 		if not opt.no_cache_link:
 			cmd.extend(['-v', f'/home/{user}/.cache/torch/hub/:/home/user/.cache/torch/hub/'])
 		cmd.extend(['iqa_m2m_segmentation:latest'])
-		cmd.extend(['/bin/bash', '-c'])
-		sub_cmd  = 'cd /src/ && python3 /src/bloc_level_metric_computation.py'
-		cmd.append(sub_cmd)
+	cmd.extend(['/bin/bash', '-c'])
+	sub_cmd  = 'cd /src/ && python3 /src/bloc_level_metric_computation.py'
+	cmd.append(sub_cmd)
 
 	subprocess.run(cmd)
 
