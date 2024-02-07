@@ -14,7 +14,7 @@ def main():
 	parser.add_argument("-p", "--prediction_folder", help="<REQUIRED> Path to folder containing predictions of AI vision task on distorted images.", type=str, required=True)
 	parser.add_argument('--gpu', help="Allow GPU utilisation (by default, False).", dest='gpu', action='store_true')
 	parser.add_argument('--singularity', help="Run a command using singularity instead of docker (by default, False).", dest='singularity', action='store_true')
-	parser.add_argument('--no_cache_link', help="Link cache folder used by pytorch to not download model weights at every execution (by default, True)", dest='no_cache_link', action='store_true')
+	parser.add_argument('--no_cache_link', help="Link cache folder used by pytorch to not download model weights at every execution (by default, False)", dest='no_cache_link', action='store_true')
 	opt = parser.parse_args()
 	
 	script_folder = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +33,8 @@ def main():
 		cmd.extend(['--bind', os.path.dirname(opt.prediction_folder) + '/:/prediction_folder/'])
 		cmd.extend(['--bind', script_folder + '/src/:/src/'])
 		if not opt.no_cache_link:
-			cmd.extend(['--bind', f'/home/{user}/.cache/torch/hub/checkpoints/:/home/user/.cache/torch/hub/checkpoints/'])
+			os.makedirs(f'/home/{user}/.cache/torch/hub/', exist_ok=True)
+			cmd.extend(['--bind', f'/home/{user}/.cache/torch/hub/:/home/user/.cache/torch/hub/'])
 		cmd.extend([script_folder + '/singularity/iqa_m2m_segmentation.sif'])
 	else:
 		cmd.extend(['sudo', 'docker', 'run', '-it'])
@@ -44,6 +45,7 @@ def main():
 		cmd.extend(['-v', os.path.dirname(opt.prediction_folder) + '/:/prediction_folder/'])
 		cmd.extend(['-v', script_folder + '/src/:/src/'])
 		if not opt.no_cache_link:
+			os.makedirs(f'/home/{user}/.cache/torch/hub/', exist_ok=True)
 			cmd.extend(['-v', f'/home/{user}/.cache/torch/hub/:/home/user/.cache/torch/hub/'])
 		cmd.extend(['iqa_m2m_segmentation:latest'])
 	cmd.extend(['/bin/bash', '-c'])
