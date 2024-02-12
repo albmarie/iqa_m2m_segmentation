@@ -32,6 +32,7 @@ def main():
 		cmd.extend(['--bind', os.path.dirname(opt.pseudo_ground_truth_folder) + '/:/pseudo_ground_truth_folder/'])
 		cmd.extend(['--bind', os.path.dirname(opt.prediction_folder) + '/:/prediction_folder/'])
 		cmd.extend(['--bind', script_folder + '/src/:/src/'])
+		cmd.extend(['--bind', script_folder + '/stacked_images_order/:/stacked_images_order/'])
 		if not opt.no_cache_link:
 			os.makedirs(f'/home/{user}/.cache/torch/hub/', exist_ok=True)
 			cmd.extend(['--bind', f'/home/{user}/.cache/torch/hub/:/home/user/.cache/torch/hub/'])
@@ -44,6 +45,7 @@ def main():
 		cmd.extend(['-v', os.path.dirname(opt.pseudo_ground_truth_folder) + '/:/pseudo_ground_truth_folder/'])
 		cmd.extend(['-v', os.path.dirname(opt.prediction_folder) + '/:/prediction_folder/'])
 		cmd.extend(['-v', script_folder + '/src/:/src/'])
+		cmd.extend(['-v', script_folder + '/stacked_images_order/:/stacked_images_order/'])
 		if not opt.no_cache_link:
 			os.makedirs(f'/home/{user}/.cache/torch/hub/', exist_ok=True)
 			cmd.extend(['-v', f'/home/{user}/.cache/torch/hub/:/home/user/.cache/torch/hub/'])

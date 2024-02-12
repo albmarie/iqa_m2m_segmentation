@@ -55,7 +55,7 @@ def load_image_based_on_distortion(img_path: str, distortion: Distortion, img_si
         yuv_img_nb_bytes = int((img_size[0]*img_size[1])*(distortion.subsampling_factor**2)*3/2)
         img_city = img_path.split('/')[-2]
         img_name = f'file \'' + img_path.split('/')[-1] + '.png\''
-        with open(f'/data/_stacked_images_order/{img_city}.txt', "r") as stack_img_idx_names_file:
+        with open(f'/stacked_images_order/{img_city}.txt', "r") as stack_img_idx_names_file:
             stack_img_idx_names = stack_img_idx_names_file.read().split("\n")[:-1]
         with open('/'.join(img_path.split('/')[:-1]) + f'/{img_city}_rec.yuv', "br") as yuv_file:
             if img_name not in stack_img_idx_names:
@@ -396,9 +396,14 @@ class SavePrecomputedEncodingStackedCityscapesDataset(Dataset):
             enc_cmd = enc_cmd.replace("FramesToBeEncoded=1 ", "FramesToBeEncoded=" + str(len(filenames)) + " ")
 
         pre_enc_cmd = "cp /stacked_images_order/" + folder + ".txt " + undistorted_folder + "/" + stacked_images_order_dest_file + " && cd " + undistorted_folder + " && "
-        
-        print("pre_enc_cmd + enc_cmd", pre_enc_cmd + enc_cmd)
-        run_bash_cmd(pre_enc_cmd + enc_cmd, hide_output=False)
+        run_bash_cmd(pre_enc_cmd + enc_cmd, hide_output=False)        
+
+        dec_cmd = self.compress_transform.decoder(image_path=os.path.join(distorted_folder, folder),
+                                                    sample_width=round(2048*self.distortion.subsampling_factor), sample_height=round(1024*self.distortion.subsampling_factor),
+                                                    get_cmd=True)
+        dec_cmd = dec_cmd[:dec_cmd.index(" && /ffmpeg/bin/ffmpeg")]
+        run_bash_cmd(dec_cmd, hide_output=False)
+
         return os.stat(distorted_folder[1:-1] + "/" + folder + self.compress_transform.bitstream_format).st_size/len(filenames)
 
 ################################################################################################################
