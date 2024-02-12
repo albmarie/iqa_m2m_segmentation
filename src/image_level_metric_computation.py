@@ -108,7 +108,7 @@ if __name__ == "__main__":
         'machine_perception_mode': Machine_Perception_mode.acc,
         #'machine_perception_mode': Machine_Perception_mode.mIoU, 
         'nb_cpu': 8,
-        'batch_size': 4,
+        'batch_size': 1,
         #'cities_split': 'test',
         #'cities_eval': ['berlin', 'mainz', 'munich', 'bielefeld', 'bonn', 'leverkusen'],
         'cities_split': 'val',
