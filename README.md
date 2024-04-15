@@ -1,6 +1,7 @@
 # IQA_M2M_segmentation
 Repo for [the paper](https://hal.science/hal-04091521/) accepted at QoMEX2023 and titled "Evaluation of Image Quality Assessment Metrics for Semantic Segmentation in a Machine-to-Machine Communication Scenario".
 
+Get associated data with [this following link](https://zenodo.org/records/10608698?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImY3ZjBiYjIyLWFmODgtNGE4Ny05MmViLTE1NjYzY2FiN2ZmYSIsImRhdGEiOnt9LCJyYW5kb20iOiJhMzE2YzBkNDE0MTZhZTJhMDY5YmUyMDZlZGQ2MDBmOSJ9.aKIJcz3TDFrCD_Ko6Y2Vf3dVepJ1sPbbLPT4hV0dOOq3pfo0uICmyCn7qLKhDBrkjygMOcSXIF6r9PsYFmjaKg). 
 ## Installation Requirements
 
 With these minimal requirements, all the scripts in this repo can be executed.
