@@ -52,7 +52,6 @@ As shown in the left part of the pipeline, 4 type of data are required to reprod
 - Prediction on compressed images $\hat{P}$. Download the archive *P_hat_C.zip* with the [following link](https://zenodo.org/records/10608698?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImY3ZjBiYjIyLWFmODgtNGE4Ny05MmViLTE1NjYzY2FiN2ZmYSIsImRhdGEiOnt9LCJyYW5kb20iOiJhMzE2YzBkNDE0MTZhZTJhMDY5YmUyMDZlZGQ2MDBmOSJ9.aKIJcz3TDFrCD_Ko6Y2Vf3dVepJ1sPbbLPT4hV0dOOq3pfo0uICmyCn7qLKhDBrkjygMOcSXIF6r9PsYFmjaKg).
 
 Note that the archives *P_GT.zip* and *P_hat_C.zip* have been generated with a modified version of the [mmsegmentation](https://github.com/open-mmlab/mmsegmentation/) library (using DNN weights within the archive *DNN_weights.zip* among other things).
-This modified version of the mmsegmentation library have not been publicly released, but could be (feel free to contact me if you need it).
 
 You can find the expected folder structure for these 4 type of data below.
 
